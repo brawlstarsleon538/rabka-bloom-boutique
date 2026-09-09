@@ -1,0 +1,7 @@
+INSERT INTO public.products (slug, name, description, price, category, image_url, variants, featured) VALUES
+('bukiet-piwonie','Bukiet piwonii i róż','Delikatny bukiet pudrowych piwonii i róż w kremowym papierze. Idealny na urodziny, imieniny i rocznice.',189.00,'bukiety','/__l5e/assets-v1/416d9fe8-7d00-4dc3-be80-f865d56f10bc/p1.jpg','["Mały","Średni","Duży"]',true),
+('zestaw-mis-czekoladki','Zestaw: róże, czekoladki i miś','Pudełko prezentowe z różami, praliniami i pluszowym misiem. Gotowe do wręczenia.',249.00,'zestawy','/__l5e/assets-v1/06fb406b-a6ed-47bc-8cda-82c577c3b453/p2.jpg','["Standard","Premium"]',true),
+('bukiet-biale-roze','Bukiet białych róż z eukaliptusem','Elegancki bukiet kremowych róż z gałązkami eukaliptusa.',219.00,'bukiety','/__l5e/assets-v1/ccbe8f8e-62fb-4ad7-bbb3-9be4d2e24ccb/p3.jpg','["Mały","Średni","Duży"]',true),
+('kosz-tulipany','Kosz z tulipanami i słodyczami','Wiklinowy kosz z pudrowymi tulipanami i pudełkiem czekoladek.',179.00,'prezenty','/__l5e/assets-v1/c26a3cc1-e0a7-45b3-9b1b-8181ac03bacf/p4.jpg','["Standard","Premium"]',false),
+('tort-kwiaty','Tort z kwiatami','Kremowy tort dekorowany świeżymi różami wraz z małym bukietem.',299.00,'zestawy','/__l5e/assets-v1/bc8e9729-5cee-4101-8a72-ef27cb42af00/p5.jpg','["12 cm","16 cm","20 cm"]',false),
+('flowerbox-roze','Flowerbox z różami','Róże w eleganckim pudełku — kompozycja, która długo cieszy oko.',229.00,'prezenty','/__l5e/assets-v1/d6484cbd-07aa-4a46-872a-99a45474f214/p6.jpg','["Mały","Duży"]',true);
