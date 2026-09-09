@@ -1,0 +1,86 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+
+import { PetalDivider } from "@/components/Logo";
+import { ProductCard } from "@/components/ProductCard";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { CATEGORIES, normalizeProduct } from "@/lib/shop";
+
+export const Route = createFileRoute("/sklep")({
+  head: () => ({
+    meta: [
+      { title: "Sklep — bukiety, prezenty i zestawy | SiViK Flowers" },
+      {
+        name: "description",
+        content:
+          "Przeglądaj bukiety, flowerboxy, kosze prezentowe i zestawy z dostawą w Rabce-Zdroju.",
+      },
+      { property: "og:title", content: "Sklep — SiViK Flowers" },
+      {
+        property: "og:description",
+        content: "Bukiety, prezenty i zestawy kwiatowe z dostawą w Rabce-Zdroju.",
+      },
+    ],
+  }),
+  component: Shop,
+});
+
+function Shop() {
+  const [category, setCategory] = useState<string>("wszystkie");
+
+  const { data: products, isLoading } = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map(normalizeProduct);
+    },
+  });
+
+  const visible = (products ?? []).filter(
+    (p) => category === "wszystkie" || p.category === category,
+  );
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-12">
+      <div className="text-center">
+        <p className="eyebrow">Nasza oferta</p>
+        <h1 className="mt-2 text-4xl">Sklep</h1>
+        <PetalDivider className="my-5" />
+      </div>
+
+      <div className="mb-8 flex flex-wrap justify-center gap-2">
+        {[{ value: "wszystkie", label: "Wszystkie" }, ...CATEGORIES].map((c) => (
+          <Button
+            key={c.value}
+            size="sm"
+            variant={category === c.value ? "default" : "outline"}
+            className="rounded-full border-gold/50 px-5"
+            onClick={() => setCategory(c.value)}
+          >
+            {c.label}
+          </Button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <p className="py-16 text-center text-sm text-muted-foreground">Ładowanie…</p>
+      ) : visible.length === 0 ? (
+        <p className="py-16 text-center text-sm text-muted-foreground">
+          Brak produktów w tej kategorii.
+        </p>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {visible.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
