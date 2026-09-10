@@ -10,16 +10,28 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as KontaktRouteImport } from './routes/kontakt'
 import { Route as KoszykRouteImport } from './routes/koszyk'
 import { Route as ONasRouteImport } from './routes/o-nas'
 import { Route as SklepRouteImport } from './routes/sklep'
 import { Route as ZamowienieRouteImport } from './routes/zamowienie'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ProduktSlugRouteImport } from './routes/produkt.$slug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KontaktRoute = KontaktRouteImport.update({
@@ -47,6 +59,11 @@ const ZamowienieRoute = ZamowienieRouteImport.update({
   path: '/zamowienie',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ProduktSlugRoute = ProduktSlugRouteImport.update({
   id: '/produkt/$slug',
   path: '/produkt/$slug',
@@ -55,64 +72,80 @@ const ProduktSlugRoute = ProduktSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/kontakt': typeof KontaktRoute
   '/koszyk': typeof KoszykRoute
   '/o-nas': typeof ONasRoute
   '/sklep': typeof SklepRoute
   '/zamowienie': typeof ZamowienieRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/produkt/$slug': typeof ProduktSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/kontakt': typeof KontaktRoute
   '/koszyk': typeof KoszykRoute
   '/o-nas': typeof ONasRoute
   '/sklep': typeof SklepRoute
   '/zamowienie': typeof ZamowienieRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/produkt/$slug': typeof ProduktSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
   '/kontakt': typeof KontaktRoute
   '/koszyk': typeof KoszykRoute
   '/o-nas': typeof ONasRoute
   '/sklep': typeof SklepRoute
   '/zamowienie': typeof ZamowienieRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/produkt/$slug': typeof ProduktSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/kontakt'
     | '/koszyk'
     | '/o-nas'
     | '/sklep'
     | '/zamowienie'
+    | '/admin'
     | '/produkt/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/kontakt'
     | '/koszyk'
     | '/o-nas'
     | '/sklep'
     | '/zamowienie'
+    | '/admin'
     | '/produkt/$slug'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
+    | '/auth'
     | '/kontakt'
     | '/koszyk'
     | '/o-nas'
     | '/sklep'
     | '/zamowienie'
+    | '/_authenticated/admin'
     | '/produkt/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
   KontaktRoute: typeof KontaktRoute
   KoszykRoute: typeof KoszykRoute
   ONasRoute: typeof ONasRoute
@@ -128,6 +161,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/kontakt': {
@@ -165,6 +212,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ZamowienieRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/produkt/$slug': {
       id: '/produkt/$slug'
       path: '/produkt/$slug'
@@ -175,8 +229,21 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
   KontaktRoute: KontaktRoute,
   KoszykRoute: KoszykRoute,
   ONasRoute: ONasRoute,
