@@ -42,9 +42,8 @@ function Checkout() {
     const form = new FormData(e.currentTarget);
     setSending(true);
     try {
-      const { data: order, error } = await supabase
-        .from("orders")
-        .insert({
+      const result = await submitOrder({
+        data: {
           customer_name: String(form.get("name")),
           customer_phone: String(form.get("phone")),
           customer_email: String(form.get("email") || ""),
@@ -54,29 +53,18 @@ function Checkout() {
           delivery_slot: slot,
           gift_message: String(form.get("gift") || ""),
           notes: String(form.get("notes") || ""),
-          payment_method: payment,
-          payment_status: "oczekuje",
-          status: "nowe",
-          total,
-        })
-        .select("id, order_number")
-        .single();
-      if (error) throw error;
-
-      const { error: itemsError } = await supabase.from("order_items").insert(
-        items.map((i) => ({
-          order_id: order.id,
-          product_id: i.productId,
-          product_name: i.name,
-          variant: i.variant,
-          unit_price: i.price,
-          quantity: i.quantity,
-        })),
-      );
-      if (itemsError) throw itemsError;
+          payment_method: payment as "blik" | "karta" | "gotowka",
+          items: items.map((i) => ({
+            productId: i.productId,
+            name: i.name,
+            variant: i.variant ?? null,
+            quantity: i.quantity,
+          })),
+        },
+      });
 
       clear();
-      setDone(order.order_number as string);
+      setDone(result.orderNumber);
     } catch (err) {
       console.error(err);
       toast.error("Nie udało się złożyć zamówienia. Spróbuj ponownie.");
