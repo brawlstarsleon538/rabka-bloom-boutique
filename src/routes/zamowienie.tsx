@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { createOrder } from "@/lib/orders.functions";
 import { useCart } from "@/lib/cart";
 import { DELIVERY_SLOTS, formatPrice } from "@/lib/shop";
 
@@ -35,6 +36,7 @@ function Checkout() {
   const [done, setDone] = useState<string | null>(null);
   const [payment, setPayment] = useState("blik");
   const [slot, setSlot] = useState(DELIVERY_SLOTS[0]!);
+  const submitOrder = useServerFn(createOrder);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
