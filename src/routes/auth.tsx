@@ -55,7 +55,16 @@ function AuthPage() {
         }
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Nie udało się zalogować");
+      const raw = err instanceof Error ? err.message : "";
+      if (raw.toLowerCase().includes("invalid login credentials")) {
+        setMode("register");
+        toast.error("Nie ma jeszcze takiego konta. Załóż je poniżej — pierwsze konto dostaje dostęp do panelu.");
+      } else if (raw.toLowerCase().includes("already registered")) {
+        setMode("login");
+        toast.error("To konto już istnieje — zaloguj się.");
+      } else {
+        toast.error(raw || "Nie udało się zalogować");
+      }
     } finally {
       setBusy(false);
     }
