@@ -23,7 +23,7 @@ export const Route = createFileRoute("/kontakt")({
   component: Contact,
 });
 
-const PHONE = "+48 000 000 000";
+const PHONE = "+48 532 136 020";
 
 function Contact() {
   return (
@@ -37,7 +37,7 @@ function Contact() {
       <div className="grid gap-10 md:grid-cols-2">
         <div className="space-y-4">
           <a
-            href="tel:+48000000000"
+            href="tel:+48532136020"
             className="flex items-center gap-4 rounded-xl border border-border bg-card p-4"
           >
             <span className="flex size-10 items-center justify-center rounded-full bg-secondary text-sage">
@@ -49,7 +49,7 @@ function Contact() {
             </span>
           </a>
           <a
-            href="https://wa.me/48000000000"
+            href="https://wa.me/48532136020"
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-4 rounded-xl border border-border bg-card p-4"
