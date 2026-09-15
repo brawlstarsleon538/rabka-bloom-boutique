@@ -86,7 +86,7 @@ export function SiteFooter() {
             <Phone className="size-5" />
           </a>
           <a
-            href="https://instagram.com"
+            href="https://www.instagram.com/sivik_flowers"
             target="_blank"
             rel="noreferrer"
             aria-label="Instagram"
@@ -95,7 +95,7 @@ export function SiteFooter() {
             <Instagram className="size-5" />
           </a>
           <a
-            href="https://facebook.com"
+            href="https://www.facebook.com/share/1CofRdJcS5/"
             target="_blank"
             rel="noreferrer"
             aria-label="Facebook"
