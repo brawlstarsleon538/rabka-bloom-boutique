@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { formatPrice, type Product } from "@/lib/shop";
@@ -33,7 +34,7 @@ export function ProductCard({ product }: { product: Product }) {
           size="sm"
           className="w-full border-gold/50 text-primary hover:bg-secondary"
           disabled={!product.in_stock}
-          onClick={() =>
+          onClick={() => {
             add({
               productId: product.id,
               name: product.name,
@@ -41,8 +42,9 @@ export function ProductCard({ product }: { product: Product }) {
               image: product.image_url,
               variant: product.variants[0] ?? null,
               quantity: 1,
-            })
-          }
+            });
+            toast.success("Dodano do koszyka", { description: product.name });
+          }}
         >
           {product.in_stock ? "Dodaj do koszyka" : "Chwilowo niedostępne"}
         </Button>
