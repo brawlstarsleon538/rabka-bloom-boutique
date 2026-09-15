@@ -82,7 +82,7 @@ export function SiteFooter() {
         <PetalDivider className="my-6" />
         <p className="text-sm text-muted-foreground">Rabka-Zdrój i okolice · dostawa tego samego dnia</p>
         <div className="mt-6 flex items-center justify-center gap-5 text-muted-foreground">
-          <a href="tel:+48000000000" aria-label="Telefon" className="hover:text-primary">
+          <a href="tel:+48532136020" aria-label="Telefon" className="hover:text-primary">
             <Phone className="size-5" />
           </a>
           <a
