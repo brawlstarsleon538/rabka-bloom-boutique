@@ -63,7 +63,7 @@ function Contact() {
             </span>
           </a>
           <a
-            href="https://instagram.com"
+            href="https://www.instagram.com/sivik_flowers"
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-4 rounded-xl border border-border bg-card p-4"
@@ -72,12 +72,12 @@ function Contact() {
               <Instagram className="size-5" />
             </span>
             <span>
-              <span className="block">@tutaj_nazwa_instagrama</span>
+              <span className="block">@sivik_flowers</span>
               <span className="text-xs text-muted-foreground">Obserwuj nas</span>
             </span>
           </a>
           <a
-            href="https://facebook.com"
+            href="https://www.facebook.com/share/1CofRdJcS5/"
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-4 rounded-xl border border-border bg-card p-4"

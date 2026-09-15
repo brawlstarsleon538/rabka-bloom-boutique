@@ -64,12 +64,12 @@ function About() {
             <Link to="/sklep">Zamów teraz</Link>
           </Button>
           <Button asChild variant="outline" className="rounded-full border-gold/60 px-6">
-            <a href="https://instagram.com" target="_blank" rel="noreferrer">
+            <a href="https://www.instagram.com/sivik_flowers" target="_blank" rel="noreferrer">
               <Instagram className="mr-2 size-4" /> Instagram
             </a>
           </Button>
           <Button asChild variant="outline" className="rounded-full border-gold/60 px-6">
-            <a href="https://facebook.com" target="_blank" rel="noreferrer">
+            <a href="https://www.facebook.com/share/1CofRdJcS5/" target="_blank" rel="noreferrer">
               <Facebook className="mr-2 size-4" /> Facebook
             </a>
           </Button>
