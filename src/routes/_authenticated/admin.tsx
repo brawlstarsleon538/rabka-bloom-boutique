@@ -238,6 +238,144 @@ function OrdersTab() {
   );
 }
 
+const WEEKDAYS = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"];
+const MONTHS = [
+  "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
+  "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień",
+];
+
+function toKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function CalendarTab() {
+  const { data: orders, isLoading } = useOrders();
+  const today = new Date();
+  const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selected, setSelected] = useState<string>(toKey(today));
+  const [openOrder, setOpenOrder] = useState<OrderRow | null>(null);
+
+  const byDate = new Map<string, OrderRow[]>();
+  for (const o of orders ?? []) {
+    const list = byDate.get(o.delivery_date) ?? [];
+    list.push(o);
+    byDate.set(o.delivery_date, list);
+  }
+
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const offset = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const cells: (Date | null)[] = [
+    ...Array.from({ length: offset }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => new Date(month.getFullYear(), month.getMonth(), i + 1)),
+  ];
+
+  const dayOrders = (byDate.get(selected) ?? []).sort((a, b) =>
+    a.delivery_slot.localeCompare(b.delivery_slot),
+  );
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="rounded-xl border border-border/70 bg-card p-4">
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
+          >
+            ‹
+          </Button>
+          <p className="text-sm font-medium">
+            {MONTHS[month.getMonth()]} {month.getFullYear()}
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
+          >
+            ›
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground">
+          {WEEKDAYS.map((d) => (
+            <div key={d} className="py-1">
+              {d}
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-1 grid grid-cols-7 gap-1">
+          {cells.map((d, i) => {
+            if (!d) return <div key={`e${i}`} />;
+            const key = toKey(d);
+            const count = byDate.get(key)?.length ?? 0;
+            const isToday = key === toKey(today);
+            const isSelected = key === selected;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setSelected(key)}
+                className={`flex aspect-square flex-col items-center justify-center rounded-lg border text-sm transition-colors ${
+                  isSelected
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : count > 0
+                      ? "border-primary/40 bg-primary/10 hover:bg-primary/20"
+                      : "border-border/60 hover:bg-muted"
+                } ${isToday && !isSelected ? "ring-1 ring-primary/50" : ""}`}
+              >
+                <span>{d.getDate()}</span>
+                {count > 0 && (
+                  <span className={`text-[10px] ${isSelected ? "" : "text-muted-foreground"}`}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        {isLoading && (
+          <p className="mt-4 text-center text-sm text-muted-foreground">Ładowanie…</p>
+        )}
+      </div>
+
+      <div>
+        <p className="eyebrow">Dostawy</p>
+        <h2 className="mt-1 text-xl">{selected}</h2>
+        {dayOrders.length === 0 ? (
+          <p className="mt-4 text-sm text-muted-foreground">Brak zamówień na ten dzień.</p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {dayOrders.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => setOpenOrder(o)}
+                className="w-full rounded-xl border border-border/70 bg-card p-3 text-left transition-colors hover:bg-muted"
+              >
+                <p className="text-sm font-medium">
+                  {o.delivery_slot} · {o.customer_name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  #{o.order_number} · {o.delivery_address}, {o.delivery_city}
+                </p>
+                <p className="mt-1 text-xs">
+                  {formatPrice(Number(o.total))} ·{" "}
+                  {ORDER_STATUSES.find((s) => s.value === o.status)?.label ?? o.status}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <OrderDialog order={openOrder} onClose={() => setOpenOrder(null)} />
+    </div>
+  );
+}
+
+
 function OrderDialog({ order, onClose }: { order: OrderRow | null; onClose: () => void }) {
   const { data: items } = useQuery({
     queryKey: ["order-items", order?.id],
