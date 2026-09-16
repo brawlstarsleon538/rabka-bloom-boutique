@@ -114,13 +114,17 @@ function AdminPage() {
       </div>
 
       <Tabs defaultValue="orders" className="mt-8">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="orders">Zamówienia</TabsTrigger>
+          <TabsTrigger value="calendar">Kalendarz</TabsTrigger>
           <TabsTrigger value="products">Produkty</TabsTrigger>
           <TabsTrigger value="stats">Statystyki</TabsTrigger>
         </TabsList>
         <TabsContent value="orders" className="mt-6">
           <OrdersTab />
+        </TabsContent>
+        <TabsContent value="calendar" className="mt-6">
+          <CalendarTab />
         </TabsContent>
         <TabsContent value="products" className="mt-6">
           <ProductsTab />
@@ -129,6 +133,7 @@ function AdminPage() {
           <StatsTab />
         </TabsContent>
       </Tabs>
+
     </div>
   );
 }
