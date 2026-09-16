@@ -1,12 +1,15 @@
+import logoAsset from "@/assets/sivik-logo.jpg.asset.json";
+
 export function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const scale =
-    size === "lg" ? "text-6xl sm:text-7xl" : size === "md" ? "text-3xl" : "text-2xl";
-  const sub =
-    size === "lg" ? "text-sm tracking-[0.5em]" : "text-[0.6rem] tracking-[0.4em]";
+  const dim =
+    size === "lg" ? "h-36 sm:h-44" : size === "md" ? "h-12" : "h-9";
   return (
-    <span className="inline-flex flex-col items-center leading-none">
-      <span className={`font-display italic text-primary ${scale}`}>SiViK</span>
-      <span className={`mt-1 uppercase text-muted-foreground ${sub}`}>Flowers</span>
+    <span className="inline-flex items-center leading-none">
+      <img
+        src={logoAsset.url}
+        alt="SiViK Flowers — Kwiaty • Prezenty • Dostawa, Rabka-Zdrój"
+        className={`${dim} w-auto rounded-full object-cover`}
+      />
     </span>
   );
 }
