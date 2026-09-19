@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -6,7 +7,7 @@ import { Logo, PetalDivider } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { hasAnyAccount, login, register } from "@/lib/auth.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -28,6 +29,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,30 +40,30 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        navigate({ to: "/admin" });
+        await login({ data: { email, password } });
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin + "/admin" },
-        });
-        if (error) throw error;
-        if (data.session) {
-          navigate({ to: "/admin" });
-        } else {
-          toast.success("Sprawdź skrzynkę e-mail i potwierdź konto.");
-        }
+        await register({ data: { email, password } });
       }
+      // The session cookie is set server-side, so anything cached for the
+      // previous visitor has to go before the panel loads.
+      await queryClient.resetQueries();
+      navigate({ to: "/admin" });
     } catch (err) {
       const raw = err instanceof Error ? err.message : "";
-      if (raw.toLowerCase().includes("invalid login credentials")) {
-        setMode("register");
-        toast.error("Nie ma jeszcze takiego konta. Załóż je poniżej — pierwsze konto dostaje dostęp do panelu.");
-      } else if (raw.toLowerCase().includes("already registered")) {
+      if (raw.includes("Nieprawidłowy e-mail lub hasło")) {
+        // Before any account exists the owner has to register first, so point
+        // them at the form instead of repeating "wrong password".
+        if (mode === "login" && !(await hasAnyAccount())) {
+          setMode("register");
+          toast.error(
+            "Nie ma jeszcze żadnego konta. Załóż je poniżej — pierwsze konto dostaje dostęp do panelu.",
+          );
+        } else {
+          toast.error(raw);
+        }
+      } else if (raw.includes("już istnieje")) {
         setMode("login");
-        toast.error("To konto już istnieje — zaloguj się.");
+        toast.error(raw);
       } else {
         toast.error(raw || "Nie udało się zalogować");
       }

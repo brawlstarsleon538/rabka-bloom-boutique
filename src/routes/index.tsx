@@ -2,11 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Flower2, Gift, Heart } from "lucide-react";
 
-import heroAsset from "@/assets/hero.jpg.asset.json";
 import { Logo, PetalDivider } from "@/components/Logo";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { listFeaturedProducts } from "@/lib/products.functions";
 import { normalizeProduct } from "@/lib/shop";
 
 export const Route = createFileRoute("/")({
@@ -38,13 +37,8 @@ function Index() {
   const { data: featured } = useQuery({
     queryKey: ["featured-products"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("featured", true)
-        .limit(6);
-      if (error) throw error;
-      return (data ?? []).map(normalizeProduct);
+      const rows = await listFeaturedProducts();
+      return rows.map(normalizeProduct);
     },
   });
 
@@ -52,7 +46,7 @@ function Index() {
     <div>
       <section className="relative overflow-hidden">
         <img
-          src={heroAsset.url}
+          src="/images/hero.jpg"
           alt="Pastelowe piwonie i eukaliptus"
           width={1920}
           height={1080}
