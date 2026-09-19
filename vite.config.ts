@@ -12,4 +12,7 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  // Lovable builds ignore this and stay on their own preset; it only takes effect
+  // for self-hosted builds such as the Docker image deployed to Railway.
+  nitro: { preset: process.env["NITRO_PRESET"] ?? "node-server" },
 });

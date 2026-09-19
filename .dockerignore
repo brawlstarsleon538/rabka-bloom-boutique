@@ -1,0 +1,33 @@
+.git
+.gitignore
+
+node_modules
+.output
+.nitro
+.tanstack
+.vinxi
+.wrangler
+dist
+dist-ssr
+
+# Secrets stay out of the image; Railway injects them as variables instead.
+.env
+.env.*
+!.env.example
+.dev.vars
+
+# Other package managers' lockfiles would fight bun.lock during install.
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+Dockerfile
+.dockerignore
+README.md
+AGENTS.md
+.lovable
+.vscode
+.idea
+.DS_Store
+*.log
+*.local
