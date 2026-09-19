@@ -12,16 +12,9 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
-# VITE_* values are inlined into the client bundle while it builds, so they have
-# to exist here. Supplying them only at runtime leaves the browser with no
-# Supabase credentials. Railway forwards service variables to declared ARGs.
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_PUBLISHABLE_KEY
-ARG VITE_SUPABASE_PROJECT_ID
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
-    VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY \
-    VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
-
+# No build arguments are needed: all data access goes through server functions,
+# so nothing secret is inlined into the client bundle and DATABASE_URL is only
+# read at runtime.
 RUN bun run build
 
 # ---------- runtime ----------

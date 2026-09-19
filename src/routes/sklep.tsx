@@ -5,7 +5,7 @@ import { useState } from "react";
 import { PetalDivider } from "@/components/Logo";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { listProducts } from "@/lib/products.functions";
 import { CATEGORIES, normalizeProduct } from "@/lib/shop";
 
 export const Route = createFileRoute("/sklep")({
@@ -33,12 +33,8 @@ function Shop() {
   const { data: products, isLoading } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return (data ?? []).map(normalizeProduct);
+      const rows = await listProducts();
+      return rows.map(normalizeProduct);
     },
   });
 

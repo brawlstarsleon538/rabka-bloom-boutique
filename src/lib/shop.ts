@@ -30,6 +30,14 @@ export const ORDER_STATUSES = [
   { value: "dostarczone", label: "Dostarczone" },
 ] as const;
 
+export type OrderStatus = (typeof ORDER_STATUSES)[number]["value"];
+
+/** Kept in sync with ORDER_STATUSES; used to validate writes on the server. */
+export const ORDER_STATUS_VALUES = ORDER_STATUSES.map((s) => s.value) as [
+  OrderStatus,
+  ...OrderStatus[],
+];
+
 export function formatPrice(value: number) {
   return new Intl.NumberFormat("pl-PL", {
     style: "currency",

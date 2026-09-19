@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Instagram, Facebook } from "lucide-react";
 
-import p1 from "@/assets/p1.jpg.asset.json";
 import { PetalDivider } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 
@@ -32,7 +31,7 @@ function About() {
 
       <div className="grid items-center gap-10 md:grid-cols-2">
         <img
-          src={p1.url}
+          src="/images/p1.jpg"
           alt="Bukiet pudrowych piwonii"
           loading="lazy"
           width={1024}

@@ -23,8 +23,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { CATEGORIES, ORDER_STATUSES, formatPrice, normalizeProduct, type Product } from "@/lib/shop";
+import { currentUser, logout } from "@/lib/auth.functions";
+import {
+  listOrderItems,
+  listOrders,
+  updateOrderStatus,
+  type OrderRow,
+} from "@/lib/orders.functions";
+import { deleteProduct, listProducts, saveProduct } from "@/lib/products.functions";
+import {
+  CATEGORIES,
+  ORDER_STATUSES,
+  formatPrice,
+  normalizeProduct,
+  type OrderStatus,
+  type Product,
+} from "@/lib/shop";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -38,25 +52,6 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
 });
 
-type OrderRow = {
-  id: string;
-  order_number: string;
-  customer_name: string;
-  customer_phone: string;
-  customer_email: string | null;
-  delivery_address: string;
-  delivery_city: string;
-  delivery_date: string;
-  delivery_slot: string;
-  gift_message: string | null;
-  notes: string | null;
-  payment_method: string;
-  payment_status: string;
-  status: string;
-  total: number;
-  created_at: string;
-};
-
 function AdminPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -64,22 +59,15 @@ function AdminPage() {
   const { data: isAdmin, isLoading: roleLoading } = useQuery({
     queryKey: ["is-admin"],
     queryFn: async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return false;
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userData.user.id)
-        .eq("role", "admin");
-      if (error) throw error;
-      return (data ?? []).length > 0;
+      const user = await currentUser();
+      return user?.isAdmin ?? false;
     },
   });
 
   async function signOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
-    await supabase.auth.signOut();
+    await logout();
     navigate({ to: "/auth", replace: true });
   }
 
@@ -141,14 +129,7 @@ function AdminPage() {
 function useOrders() {
   return useQuery({
     queryKey: ["admin-orders"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as OrderRow[];
-    },
+    queryFn: async () => await listOrders(),
   });
 }
 
@@ -159,9 +140,8 @@ function OrdersTab() {
   const [openOrder, setOpenOrder] = useState<OrderRow | null>(null);
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("orders").update({ status }).eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ id, status }: { id: string; status: OrderStatus }) => {
+      await updateOrderStatus({ data: { id, status } });
     },
     onSuccess: () => {
       toast.success("Status zaktualizowany");
@@ -211,7 +191,9 @@ function OrdersTab() {
               <div className="flex items-center gap-2">
                 <Select
                   value={o.status}
-                  onValueChange={(status) => updateStatus.mutate({ id: o.id, status })}
+                  onValueChange={(status) =>
+                    updateStatus.mutate({ id: o.id, status: status as OrderStatus })
+                  }
                 >
                   <SelectTrigger className="w-[10rem]">
                     <SelectValue />
@@ -380,14 +362,7 @@ function OrderDialog({ order, onClose }: { order: OrderRow | null; onClose: () =
   const { data: items } = useQuery({
     queryKey: ["order-items", order?.id],
     enabled: !!order,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("order_items")
-        .select("*")
-        .eq("order_id", order!.id);
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: async () => await listOrderItems({ data: { orderId: order!.id } }),
   });
 
   return (
@@ -475,20 +450,12 @@ function ProductsTab() {
 
   const { data: products, isLoading } = useQuery({
     queryKey: ["admin-products"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return (data ?? []).map(normalizeProduct);
-    },
+    queryFn: async () => (await listProducts()).map(normalizeProduct),
   });
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("products").delete().eq("id", id);
-      if (error) throw error;
+      await deleteProduct({ data: { id } });
     },
     onSuccess: () => {
       toast.success("Produkt usunięty");
@@ -585,13 +552,7 @@ function ProductDialog({
         in_stock: form.in_stock,
         featured: form.featured,
       };
-      if (form.id) {
-        const { error } = await supabase.from("products").update(payload).eq("id", form.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("products").insert(payload);
-        if (error) throw error;
-      }
+      await saveProduct({ data: form.id ? { ...payload, id: form.id } : payload });
     },
     onSuccess: () => {
       toast.success("Zapisano");

@@ -83,38 +83,51 @@ optionally set the healthcheck path to `/`.
 
 ### 2. Set the service variables
 
-Copy the values from `.env.example`. The split matters:
+Only one is needed. Add it to the app service as a **reference variable** so it
+follows the database:
 
-| Variable | Needed at |
-| --- | --- |
-| `VITE_SUPABASE_URL` | build **and** runtime |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | build **and** runtime |
-| `VITE_SUPABASE_PROJECT_ID` | build |
-| `SUPABASE_URL` | runtime |
-| `SUPABASE_PUBLISHABLE_KEY` | runtime |
-| `SUPABASE_SERVICE_ROLE_KEY` | runtime |
+```
+DATABASE_URL=${{ Postgres.DATABASE_URL }}
+```
 
-`VITE_*` values are inlined into the JavaScript the browser downloads, so they
-must be set *before* the build runs — adding them later needs a redeploy to take
-effect. Railway forwards service variables to the `ARG`s declared in the
-Dockerfile automatically.
-
-`SUPABASE_SERVICE_ROLE_KEY` backs the admin client used when writing orders
-(`src/lib/orders.functions.ts`). Keep it server-side: never rename it with a
-`VITE_` prefix, or it would be shipped to the browser.
+Nothing is required at build time. All data access runs through server
+functions, so no credentials are inlined into the browser bundle and changing a
+variable takes effect on restart rather than needing a rebuild.
 
 ### 3. Build and run it locally first (optional)
 
 ```sh
-docker build \
-  --build-arg VITE_SUPABASE_URL="https://your-project.supabase.co" \
-  --build-arg VITE_SUPABASE_PUBLISHABLE_KEY="sb_publishable_..." \
-  -t sivik-bloom .
+docker run -d --name sivik-pg -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres:17-alpine
 
-docker run --rm -p 8080:8080 --env-file .env sivik-bloom
+docker build -t sivik-bloom .
+docker run --rm -p 8080:8080 \
+  -e DATABASE_URL="postgresql://postgres:postgres@host.docker.internal:5432/postgres" \
+  sivik-bloom
 ```
 
 Then open http://localhost:8080.
+
+## Database and accounts
+
+The app talks directly to Postgres; Supabase is no longer used.
+
+- **Schema** lives in `src/db/schema.ts` as an append-only list of migrations.
+  They run automatically on the first database query after a boot, guarded by a
+  Postgres advisory lock so multiple replicas can start at once. Never edit a
+  migration that has already been deployed — add a new one.
+- **Seeding** inserts the six starting products only when the table is empty, so
+  redeploys never overwrite edits made in the admin panel.
+- **Accounts**: there is no email confirmation step. Register at `/auth`, and the
+  **first account created automatically becomes the admin** — the replacement for
+  the old `grant_first_admin` trigger. Register your own account before sharing
+  the URL, or someone else can claim the panel.
+- **Authorization** used to be enforced by Postgres RLS. It is now enforced in
+  server code: any server function touching admin data calls `requireAdmin()`
+  from `src/lib/auth/authz.server.ts`. There is no database-level safety net, so
+  new admin endpoints must add that call themselves.
+- **Passwords** are hashed with scrypt (`node:crypto`), and sessions are rows in
+  the `sessions` table keyed by a SHA-256 digest of an httpOnly cookie, so
+  logging out revokes access server-side.
 
 ### Notes
 
@@ -122,6 +135,6 @@ Then open http://localhost:8080.
   and new services can't opt into it, so this repo doesn't ship one. To manage
   the service declaratively, use [Infrastructure as Code](https://docs.railway.com/infrastructure-as-code)
   (`.railway/railway.ts` plus `railway config apply`).
-- Docker's `SecretsUsedInArgOrEnv` build warning about the publishable key is
-  expected. That key is designed to be public and already ships in the client
-  bundle; the service-role key is never passed as a build argument.
+- The SQL in `src/db/schema.ts` uses plain template literals rather than
+  `String.raw`. Bundlers re-emit the Polish characters as `\uXXXX` escapes, and
+  `String.raw` would store them literally (`Rabka-Zdr\u00F3j`).

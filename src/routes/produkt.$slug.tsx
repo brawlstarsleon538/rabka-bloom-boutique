@@ -5,7 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { getProductBySlug } from "@/lib/products.functions";
 import { useCart } from "@/lib/cart";
 import { formatPrice, normalizeProduct } from "@/lib/shop";
 
@@ -30,13 +30,8 @@ function ProductDetail() {
   const { data: product, isLoading } = useQuery({
     queryKey: ["product", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("slug", slug)
-        .maybeSingle();
-      if (error) throw error;
-      return data ? normalizeProduct(data) : null;
+      const row = await getProductBySlug({ data: { slug } });
+      return row ? normalizeProduct(row) : null;
     },
   });
 
