@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Menu, ShoppingBag, Instagram, Facebook, Phone } from "lucide-react";
+import { Menu, ShoppingBag, Instagram, Facebook, Phone, Mail } from "lucide-react";
 import { useState } from "react";
 
 import { Logo, PetalDivider } from "@/components/Logo";
@@ -82,6 +82,9 @@ export function SiteFooter() {
         <PetalDivider className="my-6" />
         <p className="text-sm text-muted-foreground">Rabka-Zdrój i okolice · dostawa tego samego dnia</p>
         <div className="mt-6 flex items-center justify-center gap-5 text-muted-foreground">
+          <a href="mailto:sivik.flowers@gmail.com" aria-label="E-mail" className="hover:text-primary">
+            <Mail className="size-5" />
+          </a>
           <a href="tel:+48532136020" aria-label="Telefon" className="hover:text-primary">
             <Phone className="size-5" />
           </a>

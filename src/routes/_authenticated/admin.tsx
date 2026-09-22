@@ -36,9 +36,13 @@ import {
   ORDER_STATUSES,
   formatPrice,
   normalizeProduct,
+  variantsToText,
+  textToVariants,
   type OrderStatus,
   type Product,
+  type ProductVariant,
 } from "@/lib/shop";
+import { listContactMessages } from "@/lib/contact.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -106,6 +110,7 @@ function AdminPage() {
           <TabsTrigger value="orders">Zamówienia</TabsTrigger>
           <TabsTrigger value="calendar">Kalendarz</TabsTrigger>
           <TabsTrigger value="products">Produkty</TabsTrigger>
+          <TabsTrigger value="messages">Wiadomości</TabsTrigger>
           <TabsTrigger value="stats">Statystyki</TabsTrigger>
         </TabsList>
         <TabsContent value="orders" className="mt-6">
@@ -116,6 +121,9 @@ function AdminPage() {
         </TabsContent>
         <TabsContent value="products" className="mt-6">
           <ProductsTab />
+        </TabsContent>
+        <TabsContent value="messages" className="mt-6">
+          <MessagesTab />
         </TabsContent>
         <TabsContent value="stats" className="mt-6">
           <StatsTab />
@@ -439,7 +447,7 @@ const EMPTY_PRODUCT = {
   price: 0,
   category: "bukiety",
   image_url: "",
-  variants: [] as string[],
+  variants: [] as ProductVariant[],
   in_stock: true,
   featured: false,
 };
@@ -494,6 +502,9 @@ function ProductsTab() {
                   <p className="text-xs text-muted-foreground">
                     {p.category} · {formatPrice(p.price)} ·{" "}
                     {p.in_stock ? "dostępny" : "niedostępny"}
+                    {p.variants.length > 0 && (
+                      <span> · warianty: {variantsToText(p.variants)}</span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -529,7 +540,10 @@ function ProductDialog({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ ...product, variantsText: product.variants.join(", ") });
+  const [form, setForm] = useState({
+    ...product,
+    variantsText: variantsToText(product.variants),
+  });
 
   const save = useMutation({
     mutationFn: async () => {
@@ -545,10 +559,7 @@ function ProductDialog({
         price: Number(form.price),
         category: form.category,
         image_url: form.image_url,
-        variants: form.variantsText
-          .split(",")
-          .map((v) => v.trim())
-          .filter(Boolean),
+        variants: textToVariants(form.variantsText),
         in_stock: form.in_stock,
         featured: form.featured,
       };
@@ -583,7 +594,7 @@ function ProductDialog({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Cena (zł)</Label>
+              <Label>Cena podstawowa (zł)</Label>
               <Input
                 type="number"
                 min={0}
@@ -618,11 +629,15 @@ function ProductDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label>Warianty (oddzielone przecinkami)</Label>
+            <Label>Warianty i ceny (oddzielone przecinkami)</Label>
             <Input
+              placeholder="np. Mały: 129, Średni: 189, Duży: 249"
               value={form.variantsText}
               onChange={(e) => setForm({ ...form, variantsText: e.target.value })}
             />
+            <p className="text-xs text-muted-foreground">
+              Ustaw warianty z własnymi cenami w formacie <code>Nazwa: Cena</code> (np. <code>Mały: 129, Średni: 189, Duży: 249</code>) lub same nazwy.
+            </p>
           </div>
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 text-sm">
@@ -687,6 +702,49 @@ function StatsTab() {
           <p className="mt-2 text-2xl">{c.value}</p>
         </div>
       ))}
+    </div>
+  );
+}
+
+function MessagesTab() {
+  const { data: messages, isLoading } = useQuery({
+    queryKey: ["admin-contact-messages"],
+    queryFn: async () => await listContactMessages(),
+  });
+
+  return (
+    <div>
+      <div className="mb-4">
+        <p className="eyebrow">Wiadomości z formularza</p>
+        <h2 className="text-xl font-semibold">Adres docelowy: sivik.flowers@gmail.com</h2>
+      </div>
+
+      {isLoading ? (
+        <p className="py-12 text-center text-sm text-muted-foreground">Ładowanie…</p>
+      ) : !messages || messages.length === 0 ? (
+        <p className="py-12 text-center text-sm text-muted-foreground">Brak wiadomości.</p>
+      ) : (
+        <div className="space-y-3">
+          {messages.map((m) => (
+            <div key={m.id} className="rounded-xl border border-border/70 bg-card p-4 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium">
+                  {m.name} &lt;<a href={`mailto:${m.email}`} className="text-primary hover:underline">{m.email}</a>&gt;
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(m.created_at).toLocaleString("pl-PL")}
+                </p>
+              </div>
+              <p className="text-xs text-sage font-medium">
+                Powiadomienie wysłane na: {m.recipient}
+              </p>
+              <p className="text-sm whitespace-pre-wrap leading-relaxed text-muted-foreground pt-1 border-t border-border/50">
+                {m.message}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 # ---------- build ----------
 # Debian-based Bun image: the repo ships bun.lock, and glibc avoids surprises
 # with rolldown's native bindings.
-FROM oven/bun:1 AS builder
+FROM oven/bun:1-alpine AS builder
 WORKDIR /app
 
 # Manifests first so the dependency layer survives source-only changes.

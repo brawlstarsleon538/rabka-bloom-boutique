@@ -137,7 +137,53 @@ SELECT * FROM (VALUES
 WHERE NOT EXISTS (SELECT 1 FROM products);
 `;
 
+const addKwiatyPrezenty = `
+INSERT INTO products (slug, name, description, price, category, image_url, variants, featured)
+SELECT * FROM (VALUES
+  ('rozany-romantyk','Różany Romantyk','Klasyczny bukiet świeżych róż',129.00,'bukiety','/images/p1.jpg','[]'::jsonb,false),
+  ('slodka-chwila','Słodka Chwila','Bukiet połączony z wybornymi pralinami',159.00,'bukiety-dodatki','/images/p2.jpg','[]'::jsonb,false),
+  ('milosc-mis','Miłość & Miś','Romantyczny bukiet w towarzystwie uroczego pluszaka',179.00,'pluszaki','/images/p3.jpg','[]'::jsonb,true),
+  ('sweet-box','Sweet Box','Elegancki box wypełniony po brzegi słodyczami',99.00,'slodkie-zestawy','/images/p4.jpg','[]'::jsonb,false),
+  ('flower-teddy','Flower & Teddy','Duży bukiet z misiem i czekoladkami',229.00,'boxy-prezentowe','/images/p5.jpg','[]'::jsonb,true),
+  ('sivik-premium-box','SiViK Premium Box','Wykwintne kwiaty, słodycze, świeca i personalizowana kartka',249.00,'boxy-prezentowe','/images/p6.jpg','[]'::jsonb,true)
+) AS seed
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE slug = 'rozany-romantyk');
+`;
+
 export const migrations: Migration[] = [
   { name: "001_init", sql: init },
   { name: "002_seed_products", sql: seedProducts },
+  { name: "003_add_kwiaty_prezenty", sql: addKwiatyPrezenty },
+  { name: "004_add_all_requested_products", sql: `
+INSERT INTO products (slug, name, description, price, category, image_url, variants, featured)
+SELECT * FROM (VALUES
+  ('klasyczny-bukiet','Klasyczny Bukiet','Elegancka kompozycja klasycznych kwiatów',119.00,'bukiety','/images/klasyczny-bukiet.jpg','[]'::jsonb,false),
+  ('bukiet-roz','Bukiet Róż','Czerwone lub pastelowe róże w pięknym ułożeniu',149.00,'bukiety','/images/bukiet-roz.jpg','[]'::jsonb,true),
+  ('bukiet-piwonii','Bukiet Piwonii','Sezonowy bukiet z pachnących piwonii',189.00,'bukiety','/images/bukiet-piwonii.jpg','[]'::jsonb,true),
+  ('bukiet-sezonowy','Bukiet Sezonowy','Kompozycja z najświeższych kwiatów sezonowych',99.00,'bukiety','/images/bukiet-sezonowy.jpg','[]'::jsonb,false),
+  ('maly-bukiet','Mały Bukiet','Subtelny i delikatny bukiet na każdą okazję',69.00,'bukiety','/images/maly-bukiet.jpg','[]'::jsonb,false),
+  ('duzy-bukiet-premium','Duży Bukiet Premium','Ekskluzywna kompozycja dla wymagających',299.00,'bukiety','/images/duzy-bukiet-premium.jpg','[]'::jsonb,true),
+  ('zestaw-czekoladek','Zestaw Czekoladek','Wyselekcjonowane czekoladki belgijskie',79.00,'slodkie-zestawy','/images/zestaw-czekoladek.jpg','[]'::jsonb,false),
+  ('zestaw-slodyczy','Zestaw Słodyczy','Pudełko pełne słodkich niespodzianek',89.00,'slodkie-zestawy','/images/zestaw-slodyczy.jpg','[]'::jsonb,false),
+  ('elegancki-box-prezentowy','Elegancki Box Prezentowy','Luksusowe pudełko ze słodkościami',149.00,'slodkie-zestawy','/images/elegancki-box-prezentowy.jpg','[]'::jsonb,true),
+  ('slodki-zestaw-dla-niej','Słodki Zestaw Dla Niej','Praliny i makaroniki w pastelowych barwach',129.00,'slodkie-zestawy','/images/slodki-zestaw-dla-niej.jpg','[]'::jsonb,false),
+  ('slodki-zestaw-dla-niego','Słodki Zestaw Dla Niego','Wyborne ciemne czekolady i trufle',129.00,'slodkie-zestawy','/images/slodki-zestaw-dla-niego.jpg','[]'::jsonb,false),
+  ('bukiet-plus-czekoladki','Bukiet + Czekoladki','Bukiet świeżych kwiatów z paczką czekoladek',169.00,'bukiety-dodatki','/images/bukiet-plus-czekoladki.jpg','[]'::jsonb,true),
+  ('bukiet-plus-praliny','Bukiet + Praliny','Delikatny bukiet z ekskluzywnymi pralinami',179.00,'bukiety-dodatki','/images/bukiet-plus-praliny.jpg','[]'::jsonb,false),
+  ('bukiet-plus-maly-prezent','Bukiet + Mały Prezent','Kwiaty w zestawie z uroczym upominkiem',159.00,'bukiety-dodatki','/images/bukiet-plus-maly-prezent.jpg','[]'::jsonb,false),
+  ('bukiet-plus-kartka','Bukiet + Kartka z Życzeniami','Twój bukiet z dedykowaną kartką',139.00,'bukiety-dodatki','/images/bukiet-plus-kartka.jpg','[]'::jsonb,false),
+  ('bukiet-plus-mis','Bukiet + Miś','Romantyczny bukiet i pluszowy miś',199.00,'pluszaki','/images/bukiet-plus-mis.jpg','[]'::jsonb,true),
+  ('bukiet-plus-maly-pluszak','Bukiet + Mały Pluszak','Urocza kompozycja z mniejszą maskotką',149.00,'pluszaki','/images/bukiet-plus-maly-pluszak.jpg','[]'::jsonb,false),
+  ('bukiet-plus-duzy-mis','Bukiet + Duży Miś','Zestaw z dużym, pluszowym misiem premium',259.00,'pluszaki','/images/bukiet-plus-duzy-mis.jpg','[]'::jsonb,true),
+  ('bukiet-pluszak-slodycze','Bukiet + Pluszak + Słodycze','Pełen pakiet radości: kwiaty, maskotka i słodycze',289.00,'pluszaki','/images/bukiet-pluszak-slodycze.jpg','[]'::jsonb,true),
+  ('kwiaty-slodycze','Kwiaty + Słodycze','Flowerbox uzupełniony pysznymi słodyczami',189.00,'boxy-prezentowe','/images/kwiaty-slodycze.jpg','[]'::jsonb,false),
+  ('kwiaty-pluszak','Kwiaty + Pluszak','Box kwiatowy z ukrytym pluszakiem',199.00,'boxy-prezentowe','/images/kwiaty-pluszak.jpg','[]'::jsonb,false),
+  ('kwiaty-swieca','Kwiaty + Świeca','Zestaw zapachowy z kwiatami i sojową świecą',179.00,'boxy-prezentowe','/images/kwiaty-swieca.jpg','[]'::jsonb,false),
+  ('kwiaty-czekoladki-kartka','Kwiaty + Czekoladki + Kartka','Box z kompletnym zestawem prezentowym',219.00,'boxy-prezentowe','/images/kwiaty-czekoladki-kartka.jpg','[]'::jsonb,true),
+  ('zestaw-prezentowy-premium','Zestaw Prezentowy Premium','Nasz najbardziej luksusowy box ze wszystkimi dodatkami',349.00,'boxy-prezentowe','/images/zestaw-prezentowy-premium.jpg','[]'::jsonb,true)
+) AS seed
+WHERE NOT EXISTS (SELECT 1 FROM products WHERE slug = 'klasyczny-bukiet');
+` },
+  { name: "005_update_product_images", sql: `UPDATE products SET image_url = '/images/' || slug || '.jpg';` }
 ];
+

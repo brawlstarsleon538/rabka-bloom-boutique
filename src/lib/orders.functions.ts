@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import { ORDER_STATUS_VALUES } from "@/lib/shop";
+import { ORDER_STATUS_VALUES, isSlotAvailable, ADVANCE_HOURS } from "@/lib/shop";
 
 const itemSchema = z.object({
   productId: z.string().uuid(),
@@ -28,6 +28,13 @@ const orderSchema = z.object({
 export const createOrder = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => orderSchema.parse(input))
   .handler(async ({ data }) => {
+    // Server-side: enforce minimum 4-hour advance ordering
+    if (!isSlotAvailable(data.delivery_date, data.delivery_slot)) {
+      throw new Error(
+        `Zamówienie musi być złożone co najmniej ${ADVANCE_HOURS} godziny przed dostawą.`,
+      );
+    }
+
     const { db } = await import("@/db/client.server");
     const sql = await db();
 

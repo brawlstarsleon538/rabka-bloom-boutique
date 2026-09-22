@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { createOrder } from "@/lib/orders.functions";
 import { useCart } from "@/lib/cart";
-import { DELIVERY_SLOTS, formatPrice } from "@/lib/shop";
+import { ADVANCE_HOURS, DELIVERY_SLOTS, formatPrice, isSlotAvailable } from "@/lib/shop";
 
 export const Route = createFileRoute("/zamowienie")({
   head: () => ({
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/zamowienie")({
       { title: "Zamówienie i dostawa — SiViK Flowers" },
       {
         name: "description",
-        content: "Podaj adres dostawy, wybierz dzień, godzinę i sposób płatności (BLIK lub karta).",
+        content: "Podaj adres dostawy, wybierz dzień, godzinę i sposób płatności (BLIK lub gotówka przy odbiorze).",
       },
       { property: "og:title", content: "Zamówienie — SiViK Flowers" },
       { property: "og:description", content: "Dostawa kwiatów w Rabce-Zdroju i okolicach." },
@@ -27,7 +27,21 @@ export const Route = createFileRoute("/zamowienie")({
   component: Checkout,
 });
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const isoDate = (d: Date) => d.toISOString().slice(0, 10);
+
+/** Returns the earliest selectable date (today if ≥1 slot is still available, else tomorrow). */
+function minDeliveryDate(): string {
+  const today = isoDate(new Date());
+  if (DELIVERY_SLOTS.some((s) => isSlotAvailable(today, s))) return today;
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return isoDate(tomorrow);
+}
+
+/** Returns the first available slot for a given date, or null. */
+function firstAvailableSlot(dateISO: string): string | null {
+  return DELIVERY_SLOTS.find((s) => isSlotAvailable(dateISO, s)) ?? null;
+}
 
 function Checkout() {
   const { items, total, clear } = useCart();
@@ -35,13 +49,30 @@ function Checkout() {
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const [payment, setPayment] = useState("blik");
-  const [slot, setSlot] = useState(DELIVERY_SLOTS[0]!);
+  const initialDate = minDeliveryDate();
+  const [date, setDate] = useState(initialDate);
+  const [slot, setSlot] = useState(() => firstAvailableSlot(initialDate) ?? DELIVERY_SLOTS[0]!);
   const submitOrder = useServerFn(createOrder);
+
+  function handleDateChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const d = e.target.value;
+    setDate(d);
+    // Auto-switch to the first valid slot on the new date
+    const first = firstAvailableSlot(d);
+    if (first) setSlot(first);
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (items.length === 0) return;
     const form = new FormData(e.currentTarget);
+    const selectedDate = String(form.get("date"));
+    if (!isSlotAvailable(selectedDate, slot)) {
+      toast.error(
+        `Wybierz termin dostawy co najmniej ${ADVANCE_HOURS} godziny z wyprzedzeniem.`,
+      );
+      return;
+    }
     setSending(true);
     try {
       const result = await submitOrder({
@@ -55,7 +86,7 @@ function Checkout() {
           delivery_slot: slot,
           gift_message: String(form.get("gift") || ""),
           notes: String(form.get("notes") || ""),
-          payment_method: payment as "blik" | "karta" | "gotowka",
+          payment_method: payment as "blik" | "gotowka",
           items: items.map((i) => ({
             productId: i.productId,
             name: i.name,
@@ -143,27 +174,40 @@ function Checkout() {
                 name="date"
                 type="date"
                 required
-                min={todayISO()}
-                defaultValue={todayISO()}
+                min={minDeliveryDate()}
+                value={date}
+                onChange={handleDateChange}
                 className="mt-1.5"
               />
             </div>
             <div>
               <Label>Godzina dostawy</Label>
               <div className="mt-1.5 flex flex-wrap gap-2">
-                {DELIVERY_SLOTS.map((s) => (
-                  <Button
-                    key={s}
-                    type="button"
-                    size="sm"
-                    variant={slot === s ? "default" : "outline"}
-                    className="rounded-full border-gold/50"
-                    onClick={() => setSlot(s)}
-                  >
-                    {s}
-                  </Button>
-                ))}
+                {DELIVERY_SLOTS.map((s) => {
+                  const available = isSlotAvailable(date, s);
+                  return (
+                    <Button
+                      key={s}
+                      type="button"
+                      size="sm"
+                      variant={slot === s ? "default" : "outline"}
+                      disabled={!available}
+                      title={!available ? `Wymagane ${ADVANCE_HOURS}h wyprzedzenia` : undefined}
+                      className={`rounded-full border-gold/50 ${
+                        !available ? "opacity-40 cursor-not-allowed" : ""
+                      }`}
+                      onClick={() => available && setSlot(s)}
+                    >
+                      {s}
+                    </Button>
+                  );
+                })}
               </div>
+              {!isSlotAvailable(date, slot) && (
+                <p className="mt-1 text-xs text-destructive">
+                  Dostawa możliwa minimum {ADVANCE_HOURS} godziny z wyprzedzeniem.
+                </p>
+              )}
             </div>
           </div>
           <div>
@@ -180,7 +224,6 @@ function Checkout() {
             <div className="mt-1.5 flex gap-2">
               {[
                 { value: "blik", label: "BLIK" },
-                { value: "karta", label: "Karta" },
                 { value: "gotowka", label: "Gotówka przy odbiorze" },
               ].map((m) => (
                 <Button
@@ -196,7 +239,7 @@ function Checkout() {
               ))}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Płatność online (BLIK / karta) potwierdzamy telefonicznie — integracja z operatorem
+              Płatność online (BLIK) potwierdzamy telefonicznie — integracja z operatorem
               płatności zostanie podłączona wkrótce.
             </p>
           </div>

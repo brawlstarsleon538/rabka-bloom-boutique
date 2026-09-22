@@ -50,7 +50,8 @@ function ProductDetail() {
     );
   }
 
-  const chosen = variant ?? product.variants[0] ?? null;
+  const chosenVariant = product.variants.find((v) => v.name === variant) ?? product.variants[0] ?? null;
+  const activePrice = chosenVariant?.price ?? product.price;
 
   return (
     <div className="mx-auto grid max-w-5xl gap-10 px-4 py-12 md:grid-cols-2">
@@ -67,7 +68,7 @@ function ProductDetail() {
       <div>
         <p className="eyebrow">{product.category}</p>
         <h1 className="mt-2 text-4xl">{product.name}</h1>
-        <p className="mt-3 text-2xl text-primary">{formatPrice(product.price)}</p>
+        <p className="mt-3 text-2xl text-primary">{formatPrice(activePrice)}</p>
         <p className="mt-5 leading-relaxed text-muted-foreground">{product.description}</p>
 
         {product.variants.length > 0 && (
@@ -76,13 +77,16 @@ function ProductDetail() {
             <div className="flex flex-wrap gap-2">
               {product.variants.map((v) => (
                 <Button
-                  key={v}
+                  key={v.name}
                   size="sm"
-                  variant={chosen === v ? "default" : "outline"}
+                  variant={chosenVariant?.name === v.name ? "default" : "outline"}
                   className="rounded-full border-gold/50 px-5"
-                  onClick={() => setVariant(v)}
+                  onClick={() => setVariant(v.name)}
                 >
-                  {v}
+                  <span>{v.name}</span>
+                  {v.price != null && (
+                    <span className="ml-1 text-xs opacity-75">({formatPrice(v.price)})</span>
+                  )}
                 </Button>
               ))}
             </div>
@@ -106,20 +110,23 @@ function ProductDetail() {
               add({
                 productId: product.id,
                 name: product.name,
-                price: product.price,
+                price: activePrice,
                 image: product.image_url,
-                variant: chosen,
+                variant: chosenVariant?.name ?? null,
                 quantity: qty,
               });
               toast.success("Dodano do koszyka");
             }}
           >
-            {product.in_stock ? "Dodaj do koszyka" : "Chwilowo niedostępne"}
+            {product.in_stock ? "Zamów" : "Chwilowo niedostępne"}
           </Button>
         </div>
 
-        <p className="mt-6 text-sm text-muted-foreground">
-          Dostawa: Rabka-Zdrój i okolice. Wybierzesz dzień i godzinę przy zamówieniu.
+        <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="text-lg">🚗</span> 
+          <span>
+            <strong>Dostawa: Rabka-Zdrój i okolice.</strong> Wybierzesz dzień i godzinę przy zamówieniu.
+          </span>
         </p>
       </div>
     </div>

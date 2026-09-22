@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -46,7 +46,7 @@ function Shop() {
     <div className="mx-auto max-w-6xl px-4 py-12">
       <div className="text-center">
         <p className="eyebrow">Nasza oferta</p>
-        <h1 className="mt-2 text-4xl">Sklep</h1>
+        <h1 className="mt-2 text-4xl">Kwiaty & Prezenty</h1>
         <PetalDivider className="my-5" />
       </div>
 
@@ -77,6 +77,16 @@ function Shop() {
           ))}
         </div>
       )}
+
+      <div className="mt-16 overflow-hidden rounded-2xl bg-cream px-6 py-12 text-center shadow-sm sm:px-12">
+        <h2 className="text-2xl font-medium sm:text-3xl">Nie wiesz, co wybrać?</h2>
+        <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
+          Połącz kwiaty, słodycze i prezent — stworzymy wyjątkowy zestaw specjalnie dla Ciebie.
+        </p>
+        <Button asChild className="mt-8 rounded-full px-8 shadow-sm">
+          <Link to="/kontakt">Stwórz własny zestaw</Link>
+        </Button>
+      </div>
     </div>
   );
 }

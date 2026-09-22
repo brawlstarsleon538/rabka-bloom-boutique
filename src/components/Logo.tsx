@@ -15,8 +15,12 @@ export function PetalDivider({ className = "" }: { className?: string }) {
   return (
     <div className={`petal-divider ${className}`}>
       <span className="h-px w-12 bg-gold/50" />
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M12 21s-8-5.4-8-10.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 3.5C20 15.6 12 21 12 21z" />
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gold" aria-hidden="true">
+        <path d="M12 4c-2.2 0-4 1.8-4 4 0 2.8 4 5.5 4 5.5s4-2.7 4-5.5c0-2.2-1.8-4-4-4z" fill="currentColor" fillOpacity="0.2" />
+        <path d="M12 6c-1.1 0-2 .9-2 2 0 1.4 2 2.7 2 2.7s2-1.3 2-2.7c0-1.1-.9-2-2-2z" />
+        <path d="M12 13.5v6.5" />
+        <path d="M12 15c-1.5-.5-3-2-3-3 1.5 0 2.5 1.2 3 3z" fill="currentColor" fillOpacity="0.3" />
+        <path d="M12 16c1.5-.5 3-2 3-3-1.5 0-2.5 1.2-3 3z" fill="currentColor" fillOpacity="0.3" />
       </svg>
       <span className="h-px w-12 bg-gold/50" />
     </div>
