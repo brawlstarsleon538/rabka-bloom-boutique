@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
+import { Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -540,13 +541,46 @@ function ProductDialog({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({
-    ...product,
-    variantsText: variantsToText(product.variants),
-  });
+  const fileRef = useRef<HTMLInputElement>(null);
+  // Extract prices for the three fixed variants
+  function variantPrice(name: string) {
+    const target = name.toLowerCase().replace(/ł/g, "l");
+    const v = product.variants.find((item) => {
+      const n = item.name.toLowerCase().replace(/ł/g, "l");
+      return n === target || n.startsWith(target);
+    });
+    return v?.price != null ? String(v.price) : "";
+  }
+
+  const [form, setForm] = useState({ ...product });
+  const [variantsEnabled, setVariantsEnabled] = useState<boolean>(product.variants.length > 0);
+  const [priceMaly, setPriceMaly] = useState<string>(variantPrice("Mały"));
+  const [priceSredni, setPriceSredni] = useState<string>(variantPrice("Średni"));
+  const [priceDuzy, setPriceDuzy] = useState<string>(variantPrice("Duży"));
+
+  function handleImageFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((f) => ({ ...f, image_url: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  }
 
   const save = useMutation({
     mutationFn: async () => {
+      // Build variants only if feature enabled and prices set
+      const sizeVariants = variantsEnabled
+        ? [
+            { label: "Mały", val: priceMaly },
+            { label: "Średni", val: priceSredni },
+            { label: "Duży", val: priceDuzy },
+          ]
+            .filter((s) => s.val !== "" && !isNaN(Number(s.val)))
+            .map((s) => ({ name: s.label, price: Number(s.val) }))
+        : [];
+
       const payload = {
         slug:
           form.slug.trim() ||
@@ -559,7 +593,7 @@ function ProductDialog({
         price: Number(form.price),
         category: form.category,
         image_url: form.image_url,
-        variants: textToVariants(form.variantsText),
+        variants: sizeVariants,
         in_stock: form.in_stock,
         featured: form.featured,
       };
@@ -622,22 +656,98 @@ function ProductDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Adres zdjęcia (URL)</Label>
-            <Input
-              value={form.image_url}
-              onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+            <Label>Zdjęcie produktu</Label>
+            {form.image_url && (
+              <img
+                src={form.image_url}
+                alt="Podgląd"
+                className="h-36 w-full rounded-lg object-cover border border-border"
+              />
+            )}
+            <div className="flex gap-2">
+              <Input
+                placeholder="https://... lub wybierz plik poniżej"
+                value={form.image_url.startsWith("data:") ? "" : form.image_url}
+                onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0 gap-1.5"
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload className="size-4" />
+                Prześlij
+              </Button>
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageFile}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Warianty i ceny (oddzielone przecinkami)</Label>
-            <Input
-              placeholder="np. Mały: 129, Średni: 189, Duży: 249"
-              value={form.variantsText}
-              onChange={(e) => setForm({ ...form, variantsText: e.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">
-              Ustaw warianty z własnymi cenami w formacie <code>Nazwa: Cena</code> (np. <code>Mały: 129, Średni: 189, Duży: 249</code>) lub same nazwy.
-            </p>
+
+          <div className="space-y-3 rounded-lg border border-border/70 p-3 bg-muted/20">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium">Różne rozmiary i ceny</Label>
+                <p className="text-xs text-muted-foreground">Włącz warianty: Mały, Średni, Duży</p>
+              </div>
+              <Switch
+                checked={variantsEnabled}
+                onCheckedChange={setVariantsEnabled}
+              />
+            </div>
+            {variantsEnabled && (
+              <div className="grid grid-cols-3 gap-3 pt-2">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground text-center font-medium">Mały</p>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="—"
+                      value={priceMaly}
+                      onChange={(e) => setPriceMaly(e.target.value)}
+                      className="pr-8 text-center"
+                    />
+                    <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">zł</span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground text-center font-medium">Średni</p>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="—"
+                      value={priceSredni}
+                      onChange={(e) => setPriceSredni(e.target.value)}
+                      className="pr-8 text-center"
+                    />
+                    <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">zł</span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground text-center font-medium">Duży</p>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min={0}
+                      placeholder="—"
+                      value={priceDuzy}
+                      onChange={(e) => setPriceDuzy(e.target.value)}
+                      className="pr-8 text-center"
+                    />
+                    <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">zł</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2 text-sm">

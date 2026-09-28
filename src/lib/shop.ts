@@ -120,7 +120,16 @@ export function variantsToText(variants: ProductVariant[]): string {
 }
 
 export function normalizeProduct(row: Record<string, unknown>): Product {
-  const rawVariants = row["variants"];
+  let rawVariants = row["variants"];
+  while (typeof rawVariants === "string") {
+    try {
+      rawVariants = JSON.parse(rawVariants);
+    } catch {
+      rawVariants = textToVariants(rawVariants);
+      break;
+    }
+  }
+
   const parsedVariants: ProductVariant[] = [];
   if (Array.isArray(rawVariants)) {
     for (const item of rawVariants) {
