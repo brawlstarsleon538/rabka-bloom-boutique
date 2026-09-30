@@ -45,10 +45,10 @@ export const sendContactMessage = createServerFn({ method: "POST" })
     let emailSent = false;
 
     // 1. Attempt Nodemailer SMTP if credentials are configured
-    const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
-    const smtpPort = Number(process.env.SMTP_PORT || "465");
-    const smtpUser = process.env.GMAIL_USER || process.env.SMTP_USER || recipientEmail;
-    const smtpPass = process.env.GMAIL_PASS || process.env.SMTP_PASS;
+    const smtpHost = process.env["SMTP_HOST"] || "smtp.gmail.com";
+    const smtpPort = Number(process.env["SMTP_PORT"] || "465");
+    const smtpUser = process.env["GMAIL_USER"] || process.env["SMTP_USER"] || recipientEmail;
+    const smtpPass = process.env["GMAIL_PASS"] || process.env["SMTP_PASS"];
 
     if (smtpPass) {
       try {

@@ -34,7 +34,7 @@ export const DELIVERY_SLOTS = [
 /** Returns the slot's start hour (0-23) parsed from e.g. "09:00 – 12:00". */
 export function slotStartHour(slot: string): number {
   const match = slot.match(/(\d{1,2}):(\d{2})/);
-  if (!match) return 0;
+  if (!match || !match[1]) return 0;
   return parseInt(match[1], 10);
 }
 
@@ -78,10 +78,14 @@ export function parseSingleVariant(item: unknown): ProductVariant | null {
   if (!item) return null;
   if (typeof item === "object" && item !== null) {
     const obj = item as Record<string, unknown>;
-    const name = String(obj.name ?? obj.variant ?? "").trim();
+    const rawName = obj["name"] ?? obj["variant"] ?? "";
+    const name = String(rawName).trim();
     if (!name) return null;
-    const price = obj.price != null && !isNaN(Number(obj.price)) ? Number(obj.price) : undefined;
-    return { name, price };
+    const rawPrice = obj["price"];
+    if (rawPrice != null && !isNaN(Number(rawPrice))) {
+      return { name, price: Number(rawPrice) };
+    }
+    return { name };
   }
   if (typeof item === "string") {
     const str = item.trim();
@@ -89,13 +93,13 @@ export function parseSingleVariant(item: unknown): ProductVariant | null {
     
     // Check "Name: 129" or "Name: 129 zł" or "Name = 129"
     const matchColon = str.match(/^(.*?)\s*[:=]\s*(\d+(?:[.,]\d+)?)\s*(?:zł|pln)?$/i);
-    if (matchColon) {
+    if (matchColon && matchColon[1] && matchColon[2]) {
       return { name: matchColon[1].trim(), price: Number(matchColon[2].replace(",", ".")) };
     }
 
     // Check "Name (129 zł)" or "Name (129)"
     const matchParen = str.match(/^(.*?)\s*\(\s*(\d+(?:[.,]\d+)?)\s*(?:zł|pln)?\s*\)$/i);
-    if (matchParen) {
+    if (matchParen && matchParen[1] && matchParen[2]) {
       return { name: matchParen[1].trim(), price: Number(matchParen[2].replace(",", ".")) };
     }
 
@@ -122,10 +126,11 @@ export function variantsToText(variants: ProductVariant[]): string {
 export function normalizeProduct(row: Record<string, unknown>): Product {
   let rawVariants = row["variants"];
   while (typeof rawVariants === "string") {
+    const strVariants = rawVariants;
     try {
-      rawVariants = JSON.parse(rawVariants);
+      rawVariants = JSON.parse(strVariants);
     } catch {
-      rawVariants = textToVariants(rawVariants);
+      rawVariants = textToVariants(strVariants);
       break;
     }
   }
