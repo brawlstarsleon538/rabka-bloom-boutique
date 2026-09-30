@@ -32,8 +32,11 @@ const productInputSchema = z.object({
   description: z.string().max(4000).default(""),
   price: z.number().min(0).max(1_000_000),
   category: z.string().min(1).max(60),
-  image_url: z.string().max(500).default(""),
-  variants: z.array(z.string().max(100)).max(20).default([]),
+  image_url: z.string().max(2_000_000).default(""),
+  variants: z
+    .array(z.object({ name: z.string().max(100), price: z.number().optional() }))
+    .max(20)
+    .default([]),
   in_stock: z.boolean().default(true),
   featured: z.boolean().default(false),
 });
@@ -89,9 +92,7 @@ export const saveProduct = createServerFn({ method: "POST" })
     await requireAdmin();
 
     const sql = await db();
-    // JSON.stringify keeps the array as a single jsonb value rather than
-    // postgres.js expanding it into a Postgres array.
-    const variants = JSON.stringify(data.variants);
+    const variants = sql.json(data.variants as any);
 
     if (data.id) {
       await sql`
@@ -102,7 +103,7 @@ export const saveProduct = createServerFn({ method: "POST" })
           price = ${data.price},
           category = ${data.category},
           image_url = ${data.image_url},
-          variants = ${variants}::jsonb,
+          variants = ${variants},
           in_stock = ${data.in_stock},
           featured = ${data.featured}
         WHERE id = ${data.id}
@@ -115,7 +116,7 @@ export const saveProduct = createServerFn({ method: "POST" })
         (slug, name, description, price, category, image_url, variants, in_stock, featured)
       VALUES (
         ${data.slug}, ${data.name}, ${data.description}, ${data.price}, ${data.category},
-        ${data.image_url}, ${variants}::jsonb, ${data.in_stock}, ${data.featured}
+        ${data.image_url}, ${variants}, ${data.in_stock}, ${data.featured}
       )
     `;
     return { ok: true as const };
