@@ -184,6 +184,29 @@ SELECT * FROM (VALUES
 ) AS seed
 WHERE NOT EXISTS (SELECT 1 FROM products WHERE slug = 'klasyczny-bukiet');
 ` },
-  { name: "005_update_product_images", sql: `UPDATE products SET image_url = '/images/' || slug || '.jpg';` }
+  { name: "005_update_product_images", sql: `UPDATE products SET image_url = '/images/' || slug || '.jpg';` },
+  {
+    name: "006_create_categories_table",
+    sql: `
+CREATE TABLE IF NOT EXISTS categories (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  slug text NOT NULL UNIQUE,
+  name text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+INSERT INTO categories (slug, name)
+VALUES
+  ('bukiety', 'Bukiety'),
+  ('slodkie-zestawy', 'Słodkie zestawy'),
+  ('bukiety-dodatki', 'Bukiety z dodatkami'),
+  ('pluszaki', 'Pluszaki'),
+  ('boxy-prezentowe', 'Boxy prezentowe'),
+  ('zestawy', 'Zestawy'),
+  ('prezenty', 'Prezenty')
+ON CONFLICT (slug) DO NOTHING;
+`,
+  },
 ];
+
 

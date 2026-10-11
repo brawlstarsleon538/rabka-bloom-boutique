@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getProductBySlug } from "@/lib/products.functions";
 import { useCart } from "@/lib/cart";
-import { formatPrice, normalizeProduct } from "@/lib/shop";
+import { formatPrice, getProductVariants, normalizeProduct } from "@/lib/shop";
 
 export const Route = createFileRoute("/produkt/$slug")({
   head: () => ({
@@ -50,7 +50,8 @@ function ProductDetail() {
     );
   }
 
-  const chosenVariant = product.variants.find((v) => v.name === variant) ?? product.variants[0] ?? null;
+  const variants = getProductVariants(product);
+  const chosenVariant = variants.find((v) => v.name === variant) ?? variants[0] ?? null;
   const activePrice = chosenVariant?.price ?? product.price;
 
   return (
@@ -68,19 +69,24 @@ function ProductDetail() {
       <div>
         <p className="eyebrow">{product.category}</p>
         <h1 className="mt-2 text-4xl">{product.name}</h1>
-        <p className="mt-3 text-2xl text-primary">{formatPrice(activePrice)}</p>
+        <p className="mt-3 text-2xl text-primary font-medium">
+          {variant === null && variants.length > 1 && (
+            <span className="mr-1.5 text-base font-normal text-muted-foreground">od</span>
+          )}
+          {formatPrice(activePrice)}
+        </p>
         <p className="mt-5 leading-relaxed text-muted-foreground">{product.description}</p>
 
-        {product.variants.length > 0 && (
+        {variants.length > 0 && (
           <div className="mt-7">
-            <p className="mb-2 text-sm text-muted-foreground">Rozmiar / wariant</p>
+            <p className="mb-2 text-sm text-muted-foreground font-medium">Wybierz rozmiar:</p>
             <div className="flex flex-wrap gap-2">
-              {product.variants.map((v) => (
+              {variants.map((v) => (
                 <Button
                   key={v.name}
                   size="sm"
                   variant={chosenVariant?.name === v.name ? "default" : "outline"}
-                  className="rounded-full border-gold/50 px-5"
+                  className="rounded-full border-gold/50 px-5 cursor-pointer"
                   onClick={() => setVariant(v.name)}
                 >
                   <span>{v.name}</span>
@@ -95,16 +101,16 @@ function ProductDetail() {
 
         <div className="mt-7 flex items-center gap-4">
           <div className="flex items-center rounded-full border border-border">
-            <button className="p-2.5" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Mniej">
+            <button className="p-2.5 cursor-pointer" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Mniej">
               <Minus className="size-4" />
             </button>
-            <span className="w-8 text-center text-sm">{qty}</span>
-            <button className="p-2.5" onClick={() => setQty((q) => q + 1)} aria-label="Więcej">
+            <span className="w-8 text-center text-sm font-semibold">{qty}</span>
+            <button className="p-2.5 cursor-pointer" onClick={() => setQty((q) => q + 1)} aria-label="Więcej">
               <Plus className="size-4" />
             </button>
           </div>
           <Button
-            className="flex-1 rounded-full"
+            className="flex-1 rounded-full cursor-pointer"
             disabled={!product.in_stock}
             onClick={() => {
               add({
@@ -115,7 +121,9 @@ function ProductDetail() {
                 variant: chosenVariant?.name ?? null,
                 quantity: qty,
               });
-              toast.success("Dodano do koszyka");
+              toast.success("Dodano do koszyka", {
+                description: `${product.name} (${chosenVariant?.name ?? "Standard"}) × ${qty}`,
+              });
             }}
           >
             {product.in_stock ? "Zamów" : "Chwilowo niedostępne"}

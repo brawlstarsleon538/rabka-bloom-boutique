@@ -5,6 +5,7 @@ import { useState } from "react";
 import { PetalDivider } from "@/components/Logo";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
+import { listCategories } from "@/lib/categories.functions";
 import { listProducts } from "@/lib/products.functions";
 import { CATEGORIES, normalizeProduct } from "@/lib/shop";
 
@@ -30,6 +31,18 @@ export const Route = createFileRoute("/sklep")({
 function Shop() {
   const [category, setCategory] = useState<string>("wszystkie");
 
+  const { data: dbCategories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => await listCategories(),
+  });
+
+  const categoryOptions = [
+    { value: "wszystkie", label: "Wszystkie" },
+    ...(dbCategories && dbCategories.length > 0
+      ? dbCategories.map((c) => ({ value: c.slug, label: c.name }))
+      : CATEGORIES),
+  ];
+
   const { data: products, isLoading } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
@@ -51,12 +64,12 @@ function Shop() {
       </div>
 
       <div className="mb-8 flex flex-wrap justify-center gap-2">
-        {[{ value: "wszystkie", label: "Wszystkie" }, ...CATEGORIES].map((c) => (
+        {categoryOptions.map((c) => (
           <Button
             key={c.value}
             size="sm"
             variant={category === c.value ? "default" : "outline"}
-            className="rounded-full border-gold/50 px-5"
+            className="rounded-full border-gold/50 px-5 cursor-pointer"
             onClick={() => setCategory(c.value)}
           >
             {c.label}

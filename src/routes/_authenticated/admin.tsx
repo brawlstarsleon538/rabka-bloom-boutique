@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
+import { FolderPlus, Plus, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Select,
   SelectContent,
@@ -44,6 +54,12 @@ import {
   type ProductVariant,
 } from "@/lib/shop";
 import { listContactMessages } from "@/lib/contact.functions";
+import {
+  createCategory,
+  deleteCategory,
+  listCategories,
+  type CategoryRow,
+} from "@/lib/categories.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -111,6 +127,7 @@ function AdminPage() {
           <TabsTrigger value="orders">Zamówienia</TabsTrigger>
           <TabsTrigger value="calendar">Kalendarz</TabsTrigger>
           <TabsTrigger value="products">Produkty</TabsTrigger>
+          <TabsTrigger value="categories">Kategorie</TabsTrigger>
           <TabsTrigger value="messages">Wiadomości</TabsTrigger>
           <TabsTrigger value="stats">Statystyki</TabsTrigger>
         </TabsList>
@@ -122,6 +139,9 @@ function AdminPage() {
         </TabsContent>
         <TabsContent value="products" className="mt-6">
           <ProductsTab />
+        </TabsContent>
+        <TabsContent value="categories" className="mt-6">
+          <CategoriesTab />
         </TabsContent>
         <TabsContent value="messages" className="mt-6">
           <MessagesTab />
@@ -553,6 +573,34 @@ function ProductDialog({
   }
 
   const [form, setForm] = useState({ ...product });
+  const [showNewCatInput, setShowNewCatInput] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [showManageCatModal, setShowManageCatModal] = useState(false);
+
+  const { data: dbCategories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => await listCategories(),
+  });
+
+  const categoryOptions =
+    dbCategories && dbCategories.length > 0
+      ? dbCategories.map((c) => ({ value: c.slug, label: c.name }))
+      : [...CATEGORIES];
+
+  const inlineAddCategory = useMutation({
+    mutationFn: async (name: string) => {
+      return await createCategory({ data: { name } });
+    },
+    onSuccess: (newCat) => {
+      toast.success(`Kategoria „${newCat.name}” została dodana`);
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      setForm((f) => ({ ...f, category: newCat.slug }));
+      setNewCatName("");
+      setShowNewCatInput(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const [variantsEnabled, setVariantsEnabled] = useState<boolean>(product.variants.length > 0);
   const [priceMaly, setPriceMaly] = useState<string>(variantPrice("Mały"));
   const [priceSredni, setPriceSredni] = useState<string>(variantPrice("Średni"));
@@ -637,22 +685,61 @@ function ProductDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label>Kategoria</Label>
-              <Select
-                value={form.category}
-                onValueChange={(category) => setForm({ ...form, category })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center justify-between">
+                <Label>Kategoria</Label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowManageCatModal(true)}
+                    className="text-xs text-muted-foreground hover:text-primary cursor-pointer hover:underline"
+                  >
+                    Zarządzaj / Usuń
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewCatInput(!showNewCatInput)}
+                    className="text-xs text-primary hover:underline cursor-pointer flex items-center gap-1 font-medium"
+                  >
+                    <Plus className="size-3" />
+                    {showNewCatInput ? "Wybierz z listy" : "Nowa"}
+                  </button>
+                </div>
+              </div>
+
+              {showNewCatInput ? (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Wpisz nazwę nowej kategorii..."
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!newCatName.trim() || inlineAddCategory.isPending}
+                    onClick={() => inlineAddCategory.mutate(newCatName.trim())}
+                  >
+                    {inlineAddCategory.isPending ? "…" : "Dodaj"}
+                  </Button>
+                </div>
+              ) : (
+                <Select
+                  value={form.category}
+                  onValueChange={(category) => setForm({ ...form, category })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryOptions.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
           <div className="space-y-2">
@@ -775,6 +862,12 @@ function ProductDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+      {showManageCatModal && (
+        <ManageCategoriesDialog
+          onClose={() => setShowManageCatModal(false)}
+          onSelectCategory={(slug) => setForm((f) => ({ ...f, category: slug }))}
+        />
+      )}
     </Dialog>
   );
 }
@@ -856,5 +949,278 @@ function MessagesTab() {
         </div>
       )}
     </div>
+  );
+}
+
+function CategoriesTab() {
+  const queryClient = useQueryClient();
+  const [name, setName] = useState("");
+  const [deletingCat, setDeletingCat] = useState<CategoryRow | null>(null);
+
+  const { data: categories, isLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => await listCategories(),
+  });
+
+  const { data: products } = useQuery({
+    queryKey: ["admin-products"],
+    queryFn: async () => (await listProducts()).map(normalizeProduct),
+  });
+
+  const addCategory = useMutation({
+    mutationFn: async (catName: string) => {
+      await createCategory({ data: { name: catName } });
+    },
+    onSuccess: () => {
+      toast.success("Kategoria dodana!");
+      setName("");
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeCategory = useMutation({
+    mutationFn: async (id: string) => {
+      await deleteCategory({ data: { id } });
+    },
+    onSuccess: () => {
+      toast.success("Kategoria została usunięta");
+      setDeletingCat(null);
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      setDeletingCat(null);
+    },
+  });
+
+  const list = categories ?? [];
+  const deletingProductCount = deletingCat
+    ? (products ?? []).filter((p) => p.category === deletingCat.slug).length
+    : 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-xl border border-border/70 bg-card p-5">
+        <h2 className="text-lg font-medium">Dodaj nową kategorię</h2>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Dodana kategoria pojawi się od razu jako filtr w sklepie oraz w formularzu dodawania produktów.
+        </p>
+        <form
+          className="mt-4 flex flex-wrap gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (name.trim()) addCategory.mutate(name.trim());
+          }}
+        >
+          <Input
+            placeholder="np. Bukiety ślubne, Boxy okazjonalne..."
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="max-w-md"
+          />
+          <Button type="submit" disabled={!name.trim() || addCategory.isPending} className="cursor-pointer">
+            <Plus className="mr-1.5 size-4" />
+            {addCategory.isPending ? "Dodawanie…" : "Dodaj kategorię"}
+          </Button>
+        </form>
+      </div>
+
+      <div>
+        <h3 className="text-base font-medium mb-3">Zarządzaj kategoriami ({list.length})</h3>
+        {isLoading ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Ładowanie kategorii…</p>
+        ) : list.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Brak kategorii.</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {list.map((c) => {
+              const count = (products ?? []).filter((p) => p.category === c.slug).length;
+              return (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between rounded-xl border border-border/70 bg-card p-4 transition-all hover:shadow-sm"
+                >
+                  <div className="min-w-0 pr-3">
+                    <p className="font-medium text-sm text-foreground truncate">{c.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      slug: <code className="text-[11px] font-mono bg-muted px-1 py-0.5 rounded">{c.slug}</code> · {count} {count === 1 ? "produkt" : count > 1 && count < 5 ? "produkty" : "produktów"}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive border-destructive/40 hover:bg-destructive hover:text-white shrink-0 cursor-pointer"
+                    disabled={removeCategory.isPending}
+                    onClick={() => setDeletingCat(c)}
+                  >
+                    <Trash2 className="size-3.5 mr-1" />
+                    Usuń
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {deletingCat && (
+        <AlertDialog open={!!deletingCat} onOpenChange={(open) => !open && setDeletingCat(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Usunąć kategorię „{deletingCat.name}”?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {deletingProductCount > 0
+                  ? `Ta kategoria zawiera obecnie ${deletingProductCount} ${deletingProductCount === 1 ? "produkt" : "produktów"}. Po jej usunięciu produkty zostaną automatycznie przeniesione do kategorii „Bukiety”.`
+                  : "Kategoria zostanie usunięta ze sklepu i z listy wyboru produktów."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeletingCat(null)} className="cursor-pointer">
+                Anuluj
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 cursor-pointer"
+                onClick={() => removeCategory.mutate(deletingCat.id)}
+              >
+                {removeCategory.isPending ? "Usuwanie…" : "Tak, usuń kategorię"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </div>
+  );
+}
+
+function ManageCategoriesDialog({
+  onClose,
+  onSelectCategory,
+}: {
+  onClose: () => void;
+  onSelectCategory?: (slug: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [newCat, setNewCat] = useState("");
+  const [deletingCat, setDeletingCat] = useState<CategoryRow | null>(null);
+
+  const { data: categories, isLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => await listCategories(),
+  });
+
+  const addCat = useMutation({
+    mutationFn: async (name: string) => {
+      return await createCategory({ data: { name } });
+    },
+    onSuccess: (cat) => {
+      toast.success(`Kategoria „${cat.name}” została dodana`);
+      setNewCat("");
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      if (onSelectCategory) onSelectCategory(cat.slug);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeCat = useMutation({
+    mutationFn: async (id: string) => {
+      await deleteCategory({ data: { id } });
+    },
+    onSuccess: () => {
+      toast.success("Kategoria usunięta");
+      setDeletingCat(null);
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message);
+      setDeletingCat(null);
+    },
+  });
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Zarządzaj kategoriami</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 pt-2">
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (newCat.trim()) addCat.mutate(newCat.trim());
+            }}
+          >
+            <Input
+              placeholder="Nowa kategoria..."
+              value={newCat}
+              onChange={(e) => setNewCat(e.target.value)}
+            />
+            <Button type="submit" size="sm" disabled={!newCat.trim() || addCat.isPending}>
+              Dodaj
+            </Button>
+          </form>
+
+          <div className="max-h-60 overflow-y-auto space-y-1.5 border border-border/60 rounded-lg p-2">
+            {isLoading ? (
+              <p className="text-center text-xs text-muted-foreground py-4">Ładowanie…</p>
+            ) : (categories ?? []).length === 0 ? (
+              <p className="text-center text-xs text-muted-foreground py-4">Brak kategorii</p>
+            ) : (
+              (categories ?? []).map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 transition-colors"
+                >
+                  <span className="text-sm font-medium">{c.name}</span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs text-destructive hover:bg-destructive/10"
+                    onClick={() => setDeletingCat(c)}
+                  >
+                    <Trash2 className="size-3.5 mr-1" />
+                    Usuń
+                  </Button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Zamknij
+          </Button>
+        </DialogFooter>
+
+        {deletingCat && (
+          <AlertDialog open={!!deletingCat} onOpenChange={(open) => !open && setDeletingCat(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Usunąć kategorię „{deletingCat.name}”?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Produkty z tej kategorii zostaną przypisane do kategorii „Bukiety”.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDeletingCat(null)}>Anuluj</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => removeCat.mutate(deletingCat.id)}
+                >
+                  Usuń kategorię
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

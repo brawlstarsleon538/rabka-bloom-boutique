@@ -74,6 +74,27 @@ export function formatPrice(value: number) {
   }).format(value);
 }
 
+/**
+ * Returns configured variants for the product, or fallback sizes
+ * (Mały, Średni, Duży) if none are defined.
+ */
+export function getProductVariants(product: {
+  price: number;
+  variants?: ProductVariant[];
+}): ProductVariant[] {
+  if (product.variants && product.variants.length > 0) {
+    return product.variants;
+  }
+  const base = product.price;
+  const step = Math.max(30, Math.round((base * 0.25) / 10) * 10);
+  return [
+    { name: "Mały", price: base },
+    { name: "Średni", price: base + step },
+    { name: "Duży", price: base + step * 2 },
+  ];
+}
+
+
 export function parseSingleVariant(item: unknown): ProductVariant | null {
   if (!item) return null;
   if (typeof item === "object" && item !== null) {
